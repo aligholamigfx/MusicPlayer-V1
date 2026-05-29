@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> Music Player | Dev Limo </title>
+    <link rel="stylesheet" href="https://lib.arvancloud.ir/vazir-font/33.003/Vazirmatn-font-face.css">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZD0iTTEyIDN2MTAuNTVjLS41OS0uMzQtMS4yNy0uNTUtMi0uNTUtMi4yMSAwLTQgMS43OS00IDRzMS43OSA0IDQgNCA0LTEuNzkgNC00VjdoNFYzaC02eiIgZmlsbD0iIzEwYjk4MSIvPjwvc3ZnPg==">
+    <link rel="stylesheet" href="https://lib.arvancloud.ir/font-awesome/6.3.0/css/all.min.css">
+    <style>
+        :root {
+            --glass-bg: rgba(255, 255, 255, 0.09);
+            --glass-bg-strong: rgba(255, 255, 255, 0.16);
+            --glass-bg-hover: rgba(255, 255, 255, 0.24);
+            --glass-border: rgba(255, 255, 255, 0.24);
+            --glass-border-strong: rgba(255, 255, 255, 0.4);
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.82);
+            --text-muted: rgba(255, 255, 255, 0.62);
+            --accent: #10b981;
+            --accent-glow: rgba(16, 185, 129, 0.65);
+            --accent2: #34d399;
+            --progress-bg: rgba(255, 255, 255, 0.22);
+            --radius-sm: 10px; --radius-md: 16px; --radius-lg: 24px; --radius-xl: 32px; --radius-full: 50%;
+            --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Vazirmatn', 'Segoe UI', 'Tahoma', sans-serif;
+            min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: #0f3d30; overflow-x: hidden; user-select: none;
+            -webkit-tap-highlight-color: transparent; -webkit-font-smoothing: antialiased;
+        }
+        .bg-orbs { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+        .bg-orb {
+            position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.7;
+            animation: orbFloat 14s ease-in-out infinite;
+        }
+        .bg-orb:nth-child(1) { width: 420px; height: 420px; background: #10b981; top: -10%; left: -6%; }
+        .bg-orb:nth-child(2) { width: 350px; height: 350px; background: #34d399; bottom: -12%; right: -8%; animation-delay: -5s; }
+        .bg-orb:nth-child(3) { width: 280px; height: 280px; background: #059669; top: 40%; left: 50%; animation-delay: -9s; }
+        .bg-orb:nth-child(4) { width: 240px; height: 240px; background: #047857; top: 60%; left: -5%; animation-delay: -3s; }
+        .bg-orb:nth-child(5) { width: 200px; height: 200px; background: #6ee7b7; bottom: 5%; left: 30%; animation-delay: -7s; }
+        @keyframes orbFloat {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(50px, -40px) scale(1.1); }
+            50% { transform: translate(-25px, 35px) scale(0.9); }
+            75% { transform: translate(-45px, -25px) scale(1.05); }
+        }
+        .particles { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+        .particle {
+            position: absolute; bottom: -20px; border-radius: 50%;
+            background: rgba(255, 255, 255, 0.8); box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+            animation: floatLinear 15s linear infinite; opacity: 0;
+        }
+        @keyframes floatLinear {
+            0% { transform: translateY(0) scale(0.7); opacity: 0; }
+            10% { opacity: 0.9; } 90% { opacity: 0.8; }
+            100% { transform: translateY(-110vh) scale(1.1); opacity: 0; }
+        }
+        .main-container {
+            position: relative; z-index: 1; display: flex; gap: 20px; align-items: stretch;
+            flex-wrap: wrap; justify-content: center; padding: 20px; width: 100%; max-width: 950px;
+        }
+        .player-card {
+            background: var(--glass-bg); backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px);
+            border: 1px solid var(--glass-border); border-radius: var(--radius-xl);
+            padding: 30px 26px 18px; width: 420px; max-width: 95vw;
+            box-shadow: 0 25px 55px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.08) inset, 0 0 70px rgba(16,185,129,0.25);
+            display: flex; flex-direction: column; align-items: center; gap: 14px; transition: all var(--transition);
+        }
+        .cover-wrapper { position: relative; width: 200px; height: 200px; flex-shrink: 0; }
+        .cover-ring {
+            position: absolute; inset: -12px; border-radius: 50%;
+            border: 3px solid rgba(255,255,255,0.2);
+            box-shadow: 0 0 40px rgba(16,185,129,0.5), 0 0 75px rgba(52,211,153,0.35);
+            animation: ringPulse 3s ease-in-out infinite;
+        }
+        @keyframes ringPulse {
+            0%, 100% { box-shadow: 0 0 40px rgba(16,185,129,0.5), 0 0 75px rgba(52,211,153,0.35); }
+            50% { box-shadow: 0 0 60px rgba(16,185,129,0.7), 0 0 95px rgba(52,211,153,0.55); }
+        }
+        .cover-disc {
+            width: 100%; height: 100%; border-radius: 50%; background: var(--glass-bg-strong);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 2px solid var(--glass-border-strong);
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden; position: relative; z-index: 1;
+        }
+        .cover-disc img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+        .cover-disc .cover-placeholder {
+            font-size: 68px; opacity: 0.8; color: #fff;
+            filter: drop-shadow(0 4px 12px rgba(0,0,0,0.5)); position: relative; z-index: 3;
+        }
+        .cover-disc.spinning { animation: spin 8s linear infinite; }
+        .cover-disc.paused-spin { animation-play-state: paused; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .track-info { text-align: center; width: 100%; }
+        .track-title { font-size: 1.35rem; font-weight: 700; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; text-shadow: 0 2px 8px rgba(0,0,0,0.5); }
+        .track-artist { font-size: 0.9rem; color: var(--text-secondary); margin-top: 4px; }
+        .visualizer-container { width: 100%; height: 44px; display: flex; align-items: flex-end; justify-content: center; padding: 0 4px; }
+        .visualizer-container canvas { width: 100%; height: 100%; border-radius: var(--radius-sm); opacity: 0.95; }
+        .progress-section { width: 100%; display: flex; align-items: center; gap: 10px; }
+        .time-label { font-size: 0.75rem; color: var(--text-muted); min-width: 38px; text-align: center; font-family: 'Vazirmatn', 'SF Mono','Consolas',monospace; }
+        .progress-bar-wrap { flex: 1; height: 22px; display: flex; align-items: center; cursor: pointer; position: relative; direction: ltr; }
+        .progress-bar-track { width: 100%; height: 5px; background: var(--progress-bg); border-radius: 10px; position: relative; overflow: visible; transition: height 0.2s; }
+        .progress-bar-wrap:hover .progress-bar-track { height: 7px; }
+        .progress-bar-fill {
+            height: 100%; background: linear-gradient(90deg, var(--accent2), var(--accent));
+            border-radius: 10px; position: relative; transition: width 0.08s linear;
+            box-shadow: 0 0 14px var(--accent-glow); width: 0%;
+        }
+        .progress-bar-thumb {
+            position: absolute; right: -8px; top: 50%; transform: translate(50%, -50%);
+            width: 16px; height: 16px; background: #fff; border-radius: 50%;
+            box-shadow: 0 0 12px rgba(16,185,129,0.9), 0 2px 8px rgba(0,0,0,0.4);
+            opacity: 0; transition: opacity 0.2s; pointer-events: none;
+        }
+        .progress-bar-wrap:hover .progress-bar-thumb { opacity: 1; }
+        .controls-row { display: flex; align-items: center; justify-content: center; gap: 14px; width: 100%; }
+        .ctrl-btn {
+            background: var(--glass-bg); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            border: 1px solid var(--glass-border); border-radius: var(--radius-full); cursor: pointer;
+            display: flex; align-items: center; justify-content: center; transition: all var(--transition);
+            color: var(--text-primary); flex-shrink: 0; box-shadow: 0 4px 15px rgba(0,0,0,0.35); opacity: 0.8; position: relative;
+        }
+        .ctrl-btn.active-mode { opacity: 1; background: rgba(16,185,129,0.45) !important; border-color: var(--accent) !important; box-shadow: 0 0 25px var(--accent-glow) !important; }
+        .ctrl-btn:hover {
+            background: var(--glass-bg-hover); border-color: var(--glass-border-strong);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.45), 0 0 25px var(--accent-glow); transform: translateY(-2px); opacity: 1;
+        }
+        .ctrl-btn:active { transform: scale(0.93); }
+        .ctrl-btn.sm { width: 40px; height: 40px; font-size: 1rem; }
+        .ctrl-btn.md { width: 48px; height: 48px; font-size: 1.2rem; }
+        .ctrl-btn.lg {
+            width: 62px; height: 62px; font-size: 1.5rem;
+            background: linear-gradient(135deg, rgba(16,185,129,0.5), rgba(52,211,153,0.5));
+            border-color: rgba(255,255,255,0.45);
+            box-shadow: 0 8px 30px rgba(16,185,129,0.55), 0 0 50px rgba(52,211,153,0.4); opacity: 1;
+        }
+        .volume-section { display: flex; align-items: center; gap: 20px; width: 100%; justify-content: center; }
+        .volume-icon { font-size: 1.1rem; color: var(--text-secondary); cursor: pointer; transition: color 0.2s; padding: 0 4px; }
+        .volume-icon:hover { color: #fff; }
+        .volume-slider-wrap { width: 100px; height: 18px; display: flex; align-items: center; cursor: pointer; direction: ltr; }
+        .volume-slider-track { width: 100%; height: 4px; background: var(--progress-bg); border-radius: 10px; position: relative; overflow: visible; transition: height 0.2s; }
+        .volume-slider-wrap:hover .volume-slider-track { height: 6px; }
+        .volume-slider-fill { height: 100%; background: rgba(255,255,255,0.85); border-radius: 10px; position: relative; width: 0%; }
+        .volume-slider-thumb {
+            position: absolute; right: -7px; top: 50%; transform: translate(50%, -50%);
+            width: 14px; height: 14px; background: #fff; border-radius: 50%;
+            box-shadow: 0 0 8px rgba(255,255,255,0.8); opacity: 0; transition: opacity 0.2s;
+        }
+        .volume-slider-wrap:hover .volume-slider-thumb { opacity: 1; }
+        .repeat-badge {
+            position: absolute; top: -2px; right: -2px; background: var(--accent); color: #fff;
+            font-size: 0.6rem; font-weight: bold; width: 15px; height: 15px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; line-height: 1; box-shadow: 0 0 6px rgba(0,0,0,0.3);
+        }
+        .playlist-card {
+            background: var(--glass-bg); backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px);
+            border: 1px solid var(--glass-border); border-radius: var(--radius-xl); padding: 20px 16px;
+            width: 340px; max-width: 95vw;
+            box-shadow: 0 25px 55px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.08) inset, 0 0 70px rgba(16,185,129,0.2);
+            display: flex; flex-direction: column; gap: 10px; max-height: 620px; transition: all var(--transition);
+        }
+        .playlist-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-shrink: 0; }
+        .playlist-title { font-size: 1.1rem; font-weight: 700; color: var(--text-primary); }
+        .playlist-count { font-size: 0.8rem; color: var(--text-muted); background: var(--glass-bg-strong); padding: 4px 12px; border-radius: 20px; }
+        .playlist-items {
+            flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; min-height: 0;
+            padding-right: 10px; padding-left: 6px;
+        }
+        .playlist-items::-webkit-scrollbar { width: 5px; }
+        .playlist-items::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); border-radius: 10px; margin: 4px 0; }
+        .playlist-items::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, var(--accent2), var(--accent));
+            border-radius: 10px; box-shadow: inset 0 0 6px rgba(0,0,0,0.3), 0 0 8px var(--accent-glow);
+        }
+        .playlist-items::-webkit-scrollbar-thumb:hover { background: linear-gradient(180deg, #6ee7b7, #059669); }
+        .playlist-items { scrollbar-width: thin; scrollbar-color: var(--accent) rgba(255, 255, 255, 0.05); }
+        .playlist-item {
+            display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: var(--radius-md);
+            cursor: pointer; transition: all 0.25s; background: rgba(255,255,255,0.05); border: 1px solid transparent; flex-shrink: 0;
+            margin-left: 2px;
+        }
+        .playlist-item:hover { background: var(--glass-bg-hover); border-color: var(--glass-border); }
+        .playlist-item.playing { background: rgba(16,185,129,0.3); border-color: rgba(16,185,129,0.7); box-shadow: 0 0 20px rgba(16,185,129,0.35); }
+        .playlist-item-index { font-size: 0.8rem; color: var(--text-muted); min-width: 22px; text-align: center; font-weight: 600; }
+        .playlist-item.playing .playlist-item-index { color: var(--accent); }
+        .playlist-item-info { flex: 1; min-width: 0; }
+        .playlist-item-title { font-size: 0.9rem; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
+        .playlist-item-artist { font-size: 0.75rem; color: var(--text-muted); }
+        .playlist-item-duration { font-size: 0.75rem; color: var(--text-muted); flex-shrink: 0; }
+        .playlist-item-download {
+            background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.9rem;
+            padding: 4px; border-radius: 50%; transition: all 0.2s; flex-shrink: 0; opacity: 0; pointer-events: none;
+        }
+        .playlist-item:hover .playlist-item-download { opacity: 1; pointer-events: auto; }
+        .playlist-item-download:hover { color: var(--accent); background: rgba(16,185,129,0.2); }
+        .download-all-btn {
+            background: var(--glass-bg-strong); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border); border-radius: var(--radius-md); padding: 10px;
+            color: var(--text-primary); cursor: pointer; transition: all var(--transition);
+            font-size: 0.8rem; display: flex; align-items: center; justify-content: center; gap: 8px;
+            font-family: 'Vazirmatn', sans-serif; margin-top: 5px;
+        }
+        .download-all-btn:hover {
+            background: var(--glass-bg-hover); border-color: var(--glass-border-strong);
+            box-shadow: 0 0 20px var(--accent-glow); color: #fff;
+        }
+        .toast {
+            position: fixed; top: 20px; right: 20px; transform: translateX(120%);
+            background: var(--glass-bg-strong); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
+            border: 1px solid var(--glass-border-strong); border-radius: var(--radius-md); padding: 12px 24px;
+            color: #fff; font-size: 0.9rem; z-index: 999; pointer-events: none;
+            opacity: 0; visibility: hidden;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease, visibility 0.3s ease;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.5);
+        }
+        .toast.show { transform: translateX(0); opacity: 1; visibility: visible; }
+        .copyright-inline {
+            background: var(--glass-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border); border-radius: var(--radius-sm); padding: 6px 16px;
+            color: var(--text-muted); font-size: 0.7rem; letter-spacing: 0.5px; text-align: center; width: auto;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        @media (max-width: 800px) {
+            .main-container { flex-direction: column; align-items: center; gap: 16px; padding: 12px; }
+            .player-card { width: 100%; max-width: 420px; padding: 24px 16px 14px; gap: 12px; border-radius: var(--radius-lg); }
+            .playlist-card { width: 100%; max-width: 420px; max-height: 350px; border-radius: var(--radius-lg); }
+            .cover-wrapper { width: 150px; height: 150px; }
+            .cover-ring { inset: -8px; border-width: 2px; }
+            .ctrl-btn.lg { width: 52px; height: 52px; font-size: 1.3rem; }
+            .ctrl-btn.md { width: 40px; height: 40px; font-size: 1rem; }
+            .ctrl-btn.sm { width: 34px; height: 34px; font-size: 0.85rem; }
+            .controls-row { gap: 8px; }
+            .track-title { font-size: 1.15rem; }
+            .toast { top: 10px; right: 10px; }
+            .volume-section { gap: 14px; }
+            .playlist-item-download { opacity: 0.6; pointer-events: auto; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-orbs">
+        <div class="bg-orb"></div><div class="bg-orb"></div><div class="bg-orb"></div><div class="bg-orb"></div><div class="bg-orb"></div>
+    </div>
+    <div class="particles" id="particlesContainer"></div>
+    <div class="toast" id="toast"></div>
+
+    <div class="main-container">
+        <div class="player-card">
+            <div class="cover-wrapper">
+                <div class="cover-ring"></div>
+                <div class="cover-disc" id="coverDisc">
+                    <span class="cover-placeholder"><i class="fa-solid fa-music"></i></span>
+                </div>
+            </div>
+            <div class="track-info">
+                <div class="track-title" id="trackTitle">آهنگ انتخاب نشده</div>
+                <div class="track-artist" id="trackArtist">از پلی‌لیست انتخاب کنید</div>
+            </div>
+            <div class="visualizer-container">
+                <canvas id="visualizerCanvas"></canvas>
+            </div>
+            <div class="progress-section">
+                <span class="time-label" id="durationTime">00:00</span>
+                <div class="progress-bar-wrap" id="progressBarWrap">
+                    <div class="progress-bar-track">
+                        <div class="progress-bar-fill" id="progressFill"><div class="progress-bar-thumb"></div></div>
+                    </div>
+                </div>
+                <span class="time-label" id="currentTime">00:00</span>
+            </div>
+            <div class="controls-row">
+                <button class="ctrl-btn sm" id="btnShuffle"><i class="fa-solid fa-shuffle"></i></button>
+                <button class="ctrl-btn md" id="btnNext"><i class="fa-solid fa-chevron-right"></i></button>
+                <button class="ctrl-btn lg" id="btnPlayPause"><i class="fa-solid fa-play"></i></button>
+                <button class="ctrl-btn md" id="btnPrev"><i class="fa-solid fa-chevron-left"></i></button>
+                <button class="ctrl-btn sm" id="btnRepeat">
+                    <i class="fa-solid fa-repeat"></i>
+                    <span class="repeat-badge" style="display: none;">1</span>
+                </button>
+            </div>
+            <div class="volume-section">
+                <span class="volume-icon" id="volumeIcon"><i class="fa-solid fa-volume-high"></i></span>
+                <div class="volume-slider-wrap" id="volumeSliderWrap">
+                    <div class="volume-slider-track">
+                        <div class="volume-slider-fill" id="volumeFill"><div class="volume-slider-thumb"></div></div>
+                    </div>
+                </div>
+            </div>
+            <div class="copyright-inline">ساخته شده توسط Dev Limo</div>
+        </div>
+
+        <div class="playlist-card">
+            <div class="playlist-header">
+                <span class="playlist-title"><i class="fa-solid fa-list"></i> پلی‌لیست</span>
+                <span class="playlist-count" id="playlistCount">۳ آهنگ</span>
+            </div>
+            <div class="playlist-items" id="playlistItems"></div>
+            <button class="download-all-btn" id="btnDownloadAll">
+                <i class="fa-solid fa-download"></i> دانلود همه آهنگ‌ها
+            </button>
+        </div>
+    </div>
+
+    <audio id="audioElement" preload="auto"></audio>
+
+    <script>
+        (function() {
+            // DOM Elements
+            const audio = document.getElementById('audioElement');
+            const coverDisc = document.getElementById('coverDisc');
+            const coverPlaceholder = coverDisc.querySelector('.cover-placeholder');
+            const trackTitle = document.getElementById('trackTitle');
+            const trackArtist = document.getElementById('trackArtist');
+            const currentTimeEl = document.getElementById('currentTime');
+            const durationTimeEl = document.getElementById('durationTime');
+            const progressFill = document.getElementById('progressFill');
+            const progressBarWrap = document.getElementById('progressBarWrap');
+            const volumeFill = document.getElementById('volumeFill');
+            const volumeSliderWrap = document.getElementById('volumeSliderWrap');
+            const volumeIcon = document.getElementById('volumeIcon');
+            const btnPlayPause = document.getElementById('btnPlayPause');
+            const btnPrev = document.getElementById('btnPrev');
+            const btnNext = document.getElementById('btnNext');
+            const btnShuffle = document.getElementById('btnShuffle');
+            const btnRepeat = document.getElementById('btnRepeat');
+            const repeatBadge = btnRepeat.querySelector('.repeat-badge');
+            const playlistItemsContainer = document.getElementById('playlistItems');
+            const playlistCount = document.getElementById('playlistCount');
+            const visualizerCanvas = document.getElementById('visualizerCanvas');
+            const vizCtx = visualizerCanvas.getContext('2d');
+            const toast = document.getElementById('toast');
+            const btnDownloadAll = document.getElementById('btnDownloadAll');
+
+            // پلی‌لیست (می‌توانید لینک‌های خود را اضافه کنید)
+            const defaultPlaylist = [
+                { title: 'ماه قشنگم', artist: 'علی یاسینی', src: 'https://dl.musicdel.ir/Music/98/10/Music/Ali%20Yasini%20-%20Mahe%20Ghashangam.mp3', durationFormatted: '03:19', durationSeconds: 262 },
+                { title: 'یاغی', artist: 'سهراب پاکزاد', src: 'https://dl.musicdel.ir/tag/music/1402/09/30/Sohrab%20Pakzad%20-%20Yaghi%20(320).mp3', durationFormatted: '03:10', durationSeconds: 262 },
+                { title: 'جاده', artist: 'پازل بند', src: 'https://dl.musicdel.ir/Music/1401/03/puzzle_band_jaaddeh.mp3', durationFormatted: '03:42', durationSeconds: 262 },
+                { title: 'مجسمه', artist: 'ناصر زینعلی', src: 'https://dl.musicdel.ir/Music/1400/04/naser_zeynali_mojasame.mp3', durationFormatted: '03:13', durationSeconds: 262 },
+                { title: 'شاخه نبات', artist: 'مسیح و آرش', src: 'https://dl.musicdel.ir/Music/1400/12/Masih%20&%20Arash%20AP%20-%20Shakhe%20Nabat.mp3', durationFormatted: '02:42', durationSeconds: 262 },
+                { title: 'محکوم', artist: 'کامران مولایی', src: 'https://dl.musicdel.ir/Music/1400/05/kamran_molaei_mahkoom.mp3', durationFormatted: '03:36', durationSeconds: 262 },
+                { title: 'شال قرمز', artist: 'میثاق راد', src: 'https://dl.musicdel.ir/Music/1400/04/misagh_rad_shaale_ghermez.mp3', durationFormatted: '03:11', durationSeconds: 262 },
+                { title: 'حال دلم', artist: 'آصف آریا', src: 'https://dl.musicdel.ir/Music/99/08/Music/Asef%20Aria%20%E2%80%93%20Hale%20Delam%20(320).mp3', durationFormatted: '03:16', durationSeconds: 262 },
+                { title: 'اصلا تقصیر من بود', artist: 'ناصر زینعلی', src: 'https://dl.musicdel.ir/Music/1400/08/naser_zeynali_aslan_taghsire%20man%20bood.mp3', durationFormatted: '02:52', durationSeconds: 262 },
+                { title: 'گل میناب', artist: 'رضا صادقی', src: 'https://dl.musicdel.ir/tag/music/1405/01/21/Reza%20Sadeghi%20-%20Gole%20Minab%20(320).mp3', durationFormatted: '04:14', durationSeconds: 262 },
+                { title: 'دختره بس کو', artist: 'رامین تجنگی', src: 'https://dl.musicdel.ir/tag/music/1403/12/23/Ramin%20Tajangi%20-%20Dokhtare%20Bas%20Ko%20(320).mp3', durationFormatted: '02:50', durationSeconds: 262 },
+                { title: 'آتش', artist: 'رضا بهرام', src: 'https://dl.musicdel.ir/Music/1400/05/reza_bahram_atash.mp3', durationFormatted: '03:12', durationSeconds: 262 },
+                { title: 'علاج', artist: 'محسن چاوشی', src: 'https://dl.musicdel.ir/tag/music/1404/04/01/Mohsen%20Chavoshi%20-%20Alaj%20(320).mp3', durationFormatted: '05:15', durationSeconds: 262 },
+                { title: 'حقمه', artist: 'علیرضا طلیسچی', src: 'https://dl.musicdel.ir/Music/1401/03/alireza_talischi_haghame.mp3', durationFormatted: '03:25', durationSeconds: 262 },
+                { title: 'جانم باش', artist: 'آرون افشار', src: 'https://dl.musicdel.ir/Music/1400/04/aron_afshar_janam_bash.mp3', durationFormatted: '04:22', durationSeconds: 262 },
+            ];
+
+            let playlist = [...defaultPlaylist];
+            let currentIndex = -1;
+            let isShuffle = false;
+            let repeatMode = 0;
+            let isDraggingProgress = false;
+            let isDraggingVolume = false;
+            let audioContext = null, analyser = null;
+            let vizAnimationId = null, fallbackAnimFrame = null, toastTimer = null;
+            let useFallbackVisualizer = true;
+            let isPlaying = false;
+
+            function showToast(msg) {
+                if (toastTimer) clearTimeout(toastTimer);
+                toast.textContent = msg;
+                toast.classList.add('show');
+                toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
+            }
+
+            function formatTime(sec) {
+                if (isNaN(sec) || !isFinite(sec)) return '00:00';
+                const m = Math.floor(sec / 60), s = Math.floor(sec % 60);
+                return String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+            }
+
+            function downloadFile(url, filename) {
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename || url.split('/').pop();
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            }
+
+            function downloadAllTracks() {
+                if (playlist.length === 0) return showToast('⚠️ پلی‌لیست خالی است');
+                showToast('⬇️ دانلود همه آهنگ‌ها شروع شد...');
+                playlist.forEach((track, i) => setTimeout(() => downloadFile(track.src, track.src.split('/').pop()), i * 300));
+            }
+
+            function renderPlaylist() {
+                playlistItemsContainer.innerHTML = '';
+                if (playlist.length === 0) {
+                    playlistItemsContainer.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:20px;"><i class="fa-solid fa-headphones" style="font-size:2rem;display:block;margin-bottom:8px;opacity:0.5;"></i>پلی‌لیست خالی است</div>';
+                } else {
+                    playlist.forEach((track, idx) => {
+                        const item = document.createElement('div');
+                        item.className = 'playlist-item' + (idx === currentIndex ? ' playing' : '');
+                        item.innerHTML = `
+                            <span class="playlist-item-index">${idx+1}</span>
+                            <div class="playlist-item-info">
+                                <div class="playlist-item-title">${escapeHTML(track.title)}</div>
+                                <div class="playlist-item-artist">${escapeHTML(track.artist)}</div>
+                            </div>
+                            <span class="playlist-item-duration">${track.durationFormatted}</span>
+                            <button class="playlist-item-download" title="دانلود آهنگ"><i class="fa-solid fa-download"></i></button>
+                        `;
+                        item.addEventListener('click', (e) => {
+                            if (!e.target.closest('.playlist-item-download')) playTrack(idx);
+                        });
+                        item.querySelector('.playlist-item-download').addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            downloadFile(track.src, track.src.split('/').pop());
+                            showToast(`⬇️ دانلود "${track.title}" شروع شد`);
+                        });
+                        playlistItemsContainer.appendChild(item);
+                    });
+                }
+                playlistCount.textContent = playlist.length + ' آهنگ';
+            }
+
+            function escapeHTML(str) {
+                const div = document.createElement('div');
+                div.textContent = str;
+                return div.innerHTML;
+            }
+
+            function isCrossOrigin(url) {
+                try { return new URL(url, window.location.href).origin !== window.location.origin; }
+                catch { return true; }
+            }
+
+            function stopVisualizer() {
+                if (vizAnimationId) { cancelAnimationFrame(vizAnimationId); vizAnimationId = null; }
+                if (fallbackAnimFrame) { cancelAnimationFrame(fallbackAnimFrame); fallbackAnimFrame = null; }
+            }
+
+            function startFallbackVisualizer() {
+                stopVisualizer();
+                function animate() {
+                    if (!isPlaying) { fallbackAnimFrame = null; return; }
+                    const W = visualizerCanvas.width, H = visualizerCanvas.height;
+                    vizCtx.clearRect(0, 0, W, H);
+                    const barCount = 32, totalBarWidth = W / barCount, barWidth = totalBarWidth * 0.7, gap = totalBarWidth * 0.3;
+                    for (let i = 0; i < barCount; i++) {
+                        const v = 0.15 + 0.35 * Math.abs(Math.sin(Date.now() / 800 + i * 0.35));
+                        const barHeight = Math.max(2, v * (H - 4));
+                        const x = i * totalBarWidth + gap / 2;
+                        const y = H - barHeight;
+                        vizCtx.fillStyle = '#10b981';
+                        vizCtx.beginPath();
+                        vizCtx.roundRect(x, y, barWidth, barHeight, barWidth / 2);
+                        vizCtx.fill();
+                    }
+                    fallbackAnimFrame = requestAnimationFrame(animate);
+                }
+                fallbackAnimFrame = requestAnimationFrame(animate);
+            }
+
+            function startRealVisualizer() {
+                if (!analyser) return;
+                stopVisualizer();
+                function draw() {
+                    vizAnimationId = requestAnimationFrame(draw);
+                    if (!isPlaying || !analyser) { stopVisualizer(); return; }
+                    const dataArray = new Uint8Array(analyser.frequencyBinCount);
+                    analyser.getByteFrequencyData(dataArray);
+                    const W = visualizerCanvas.width, H = visualizerCanvas.height;
+                    vizCtx.clearRect(0, 0, W, H);
+                    const barCount = 32, step = Math.floor(dataArray.length / barCount);
+                    const totalBarWidth = W / barCount, barWidth = totalBarWidth * 0.7, gap = totalBarWidth * 0.3;
+                    for (let i = 0; i < barCount; i++) {
+                        const value = dataArray[Math.min(i * step, dataArray.length - 1)];
+                        const normalized = value / 255;
+                        const barHeight = Math.max(2, normalized * (H - 4));
+                        const x = i * totalBarWidth + gap / 2;
+                        const y = H - barHeight;
+                        const gradient = vizCtx.createLinearGradient(x, y, x, H);
+                        gradient.addColorStop(0, '#10b981'); gradient.addColorStop(1, '#34d399');
+                        vizCtx.fillStyle = gradient;
+                        vizCtx.beginPath();
+                        vizCtx.roundRect(x, y, barWidth, barHeight, barWidth / 2);
+                        vizCtx.fill();
+                        if (normalized > 0.6) {
+                            vizCtx.shadowColor = '#10b981'; vizCtx.shadowBlur = 8;
+                            vizCtx.fill(); vizCtx.shadowBlur = 0;
+                        }
+                    }
+                }
+                draw();
+            }
+
+            // تابع یکپارچه برای راه‌اندازی مجدد ویژوالایزر (بعد از Play یا Resume)
+            function restartVisualizer() {
+                if (!isPlaying) return;
+                stopVisualizer();
+                if (useFallbackVisualizer) {
+                    startFallbackVisualizer();
+                } else {
+                    // اگر AudioContext هنوز راه‌اندازی نشده، تلاش برای ساخت
+                    if (!analyser) {
+                        initAudioContext();
+                    }
+                    if (analyser) {
+                        startRealVisualizer();
+                    } else {
+                        // در صورت عدم موفقیت، به فال‌بک برو
+                        useFallbackVisualizer = true;
+                        startFallbackVisualizer();
+                    }
+                }
+            }
+
+            function initAudioContext() {
+                if (audioContext && analyser) return;
+                try {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    analyser = audioContext.createAnalyser();
+                    analyser.fftSize = 128;
+                    analyser.smoothingTimeConstant = 0.7;
+                    const source = audioContext.createMediaElementSource(audio);
+                    source.connect(analyser);
+                    analyser.connect(audioContext.destination);
+                    useFallbackVisualizer = false;
+                } catch (e) {
+                    console.warn('AudioContext failed, switching to fallback visualizer');
+                    useFallbackVisualizer = true;
+                    analyser = null;
+                }
+            }
+
+            function playTrack(idx) {
+                if (idx < 0 || idx >= playlist.length) return;
+                currentIndex = idx;
+                const track = playlist[idx];
+                audio.src = track.src;
+                audio.load();
+                audio.play().then(() => {
+                    updatePlayPauseButton(true);
+                    updateCoverSpin(true);
+                    updatePlayerUI(track);
+                    // تصمیم‌گیری در مورد نوع ویژوالایزر
+                    if (!isCrossOrigin(track.src)) {
+                        useFallbackVisualizer = false;
+                        initAudioContext();
+                    } else {
+                        useFallbackVisualizer = true;
+                    }
+                    restartVisualizer();
+                }).catch(err => {
+                    console.warn('پخش ناموفق:', err);
+                    showToast('⚠️ خطا در پخش آهنگ');
+                    if (playlist.length > 1) setTimeout(playNext, 500);
+                });
+                renderPlaylist();
+            }
+
+            function updatePlayerUI(track) {
+                trackTitle.textContent = track.title;
+                trackArtist.textContent = track.artist;
+                durationTimeEl.textContent = track.durationFormatted || '--:--';
+                coverPlaceholder.innerHTML = '<i class="fa-solid fa-music"></i>';
+            }
+
+            function updatePlayerUIForNoTrack() {
+                trackTitle.textContent = 'آهنگ انتخاب نشده';
+                trackArtist.textContent = 'از پلی‌لیست انتخاب کنید';
+                currentTimeEl.textContent = '00:00';
+                durationTimeEl.textContent = '00:00';
+                progressFill.style.width = '0%';
+                coverPlaceholder.innerHTML = '<i class="fa-solid fa-music"></i>';
+                updatePlayPauseButton(false);
+                updateCoverSpin(false);
+            }
+
+            function updatePlayPauseButton(playing) {
+                btnPlayPause.innerHTML = playing ? '<i class="fa-solid fa-pause"></i>' : '<i class="fa-solid fa-play"></i>';
+            }
+
+            function updateCoverSpin(playing) {
+                if (playing) {
+                    coverDisc.classList.add('spinning');
+                    coverDisc.classList.remove('paused-spin');
+                } else if (currentIndex >= 0) {
+                    coverDisc.classList.add('spinning', 'paused-spin');
+                } else {
+                    coverDisc.classList.remove('spinning', 'paused-spin');
+                }
+            }
+
+            function updateRepeatIcon() {
+                btnRepeat.classList.remove('active-mode');
+                repeatBadge.style.display = 'none';
+                if (repeatMode === 0) btnRepeat.style.opacity = '0.4';
+                else if (repeatMode === 1) {
+                    btnRepeat.style.opacity = '1';
+                    btnRepeat.classList.add('active-mode');
+                } else {
+                    btnRepeat.style.opacity = '1';
+                    btnRepeat.classList.add('active-mode');
+                    repeatBadge.style.display = 'flex';
+                }
+            }
+
+            function updateVolumeIcon() {
+                const v = audio.volume;
+                let icon = 'fa-volume-high';
+                if (v === 0) icon = 'fa-volume-xmark';
+                else if (v < 0.4) icon = 'fa-volume-low';
+                else if (v < 0.7) icon = 'fa-volume-off';
+                volumeIcon.innerHTML = `<i class="fa-solid ${icon}"></i>`;
+            }
+
+            function playNext() {
+                if (playlist.length === 0) return;
+                if (isShuffle && playlist.length > 1) {
+                    let r;
+                    do { r = Math.floor(Math.random() * playlist.length); } while (r === currentIndex && playlist.length > 1);
+                    playTrack(r);
+                } else playTrack((currentIndex + 1) % playlist.length);
+            }
+
+            function playPrev() {
+                if (playlist.length === 0) return;
+                if (audio.currentTime > 3) { audio.currentTime = 0; return; }
+                if (isShuffle && playlist.length > 1) {
+                    let r;
+                    do { r = Math.floor(Math.random() * playlist.length); } while (r === currentIndex && playlist.length > 1);
+                    playTrack(r);
+                } else playTrack((currentIndex - 1 + playlist.length) % playlist.length);
+            }
+
+            audio.addEventListener('loadedmetadata', () => {
+                if (currentIndex >= 0 && currentIndex < playlist.length) {
+                    const track = playlist[currentIndex];
+                    track.durationSeconds = audio.duration;
+                    track.durationFormatted = formatTime(audio.duration);
+                    durationTimeEl.textContent = track.durationFormatted;
+                    renderPlaylist();
+                }
+            });
+            audio.addEventListener('timeupdate', () => {
+                if (!isDraggingProgress && currentIndex >= 0 && audio.duration) {
+                    const pct = (audio.currentTime / audio.duration) * 100;
+                    progressFill.style.width = pct + '%';
+                    currentTimeEl.textContent = formatTime(audio.currentTime);
+                }
+            });
+            audio.addEventListener('ended', () => {
+                if (repeatMode === 2) { audio.currentTime = 0; audio.play(); }
+                else if (repeatMode === 1 || (repeatMode === 0 && currentIndex < playlist.length-1)) playNext();
+                else { updatePlayPauseButton(false); updateCoverSpin(false); audio.currentTime = 0; progressFill.style.width = '0%'; currentTimeEl.textContent = '00:00'; }
+            });
+            audio.addEventListener('play', () => {
+                isPlaying = true;
+                updatePlayPauseButton(true);
+                updateCoverSpin(true);
+                restartVisualizer(); // راه‌اندازی مجدد پس از هر Play (از جمله Resume)
+            });
+            audio.addEventListener('pause', () => {
+                isPlaying = false;
+                updatePlayPauseButton(false);
+                updateCoverSpin(false);
+                stopVisualizer();
+            });
+            audio.addEventListener('error', () => {
+                showToast('⚠️ خطا در بارگذاری آهنگ');
+                if (currentIndex >= 0 && playlist.length > 1) {
+                    const fi = currentIndex;
+                    setTimeout(() => { if (currentIndex === fi) playNext(); }, 500);
+                }
+            });
+
+            function getProgressRatio(e) {
+                const rect = progressBarWrap.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                return Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+            }
+            progressBarWrap.addEventListener('mousedown', (e) => {
+                isDraggingProgress = true;
+                const ratio = getProgressRatio(e);
+                if (audio.duration) { audio.currentTime = ratio * audio.duration; progressFill.style.width = (ratio*100)+'%'; currentTimeEl.textContent = formatTime(audio.currentTime); }
+            });
+            progressBarWrap.addEventListener('touchstart', (e) => {
+                isDraggingProgress = true;
+                const ratio = getProgressRatio(e);
+                if (audio.duration) { audio.currentTime = ratio * audio.duration; progressFill.style.width = (ratio*100)+'%'; currentTimeEl.textContent = formatTime(audio.currentTime); }
+            }, {passive: false});
+            document.addEventListener('mousemove', (e) => {
+                if (isDraggingProgress && audio.duration) {
+                    const ratio = getProgressRatio(e);
+                    audio.currentTime = ratio * audio.duration;
+                    progressFill.style.width = (ratio*100)+'%';
+                    currentTimeEl.textContent = formatTime(audio.currentTime);
+                }
+                if (isDraggingVolume) updateVolumeFromEvent(e);
+            });
+            document.addEventListener('touchmove', (e) => {
+                if (isDraggingProgress && audio.duration) {
+                    const ratio = getProgressRatio(e);
+                    audio.currentTime = ratio * audio.duration;
+                    progressFill.style.width = (ratio*100)+'%';
+                    currentTimeEl.textContent = formatTime(audio.currentTime);
+                }
+                if (isDraggingVolume) updateVolumeFromEvent(e);
+            }, {passive: false});
+            document.addEventListener('mouseup', () => { isDraggingProgress = false; isDraggingVolume = false; });
+            document.addEventListener('touchend', () => { isDraggingProgress = false; isDraggingVolume = false; });
+
+            audio.volume = 0.75;
+            function updateVolumeFromEvent(e) {
+                const rect = volumeSliderWrap.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+                audio.volume = ratio;
+                volumeFill.style.width = (ratio*100)+'%';
+                updateVolumeIcon();
+            }
+            volumeSliderWrap.addEventListener('mousedown', (e) => { isDraggingVolume = true; updateVolumeFromEvent(e); });
+            volumeSliderWrap.addEventListener('touchstart', (e) => { isDraggingVolume = true; updateVolumeFromEvent(e); }, {passive: false});
+            volumeIcon.addEventListener('click', () => {
+                if (audio.volume > 0) { audio._lastVolume = audio.volume; audio.volume = 0; volumeFill.style.width = '0%'; }
+                else { audio.volume = audio._lastVolume || 0.75; volumeFill.style.width = (audio.volume*100)+'%'; }
+                updateVolumeIcon();
+            });
+            audio.addEventListener('volumechange', () => {
+                if (!isDraggingVolume) { volumeFill.style.width = (audio.volume*100)+'%'; updateVolumeIcon(); }
+            });
+
+            btnPlayPause.addEventListener('click', () => {
+                if (playlist.length === 0) return showToast('⚠️ پلی‌لیست خالی است');
+                if (currentIndex < 0) return playTrack(0);
+                if (audio.paused) audio.play(); else audio.pause();
+            });
+            btnNext.addEventListener('click', playNext);
+            btnPrev.addEventListener('click', playPrev);
+            btnShuffle.addEventListener('click', () => {
+                isShuffle = !isShuffle;
+                btnShuffle.classList.toggle('active-mode', isShuffle);
+                showToast(isShuffle ? '🔀 پخش تصادفی فعال' : 'پخش تصادفی غیرفعال');
+            });
+            btnRepeat.addEventListener('click', () => {
+                repeatMode = (repeatMode + 1) % 3;
+                updateRepeatIcon();
+                showToast(repeatMode === 0 ? 'تکرار غیرفعال' : (repeatMode === 1 ? '🔁 تکرار پلی‌لیست' : '🔂 تکرار یک آهنگ'));
+            });
+            btnDownloadAll.addEventListener('click', downloadAllTracks);
+
+            document.addEventListener('keydown', (e) => {
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+                switch(e.code) {
+                    case 'Space': e.preventDefault(); btnPlayPause.click(); break;
+                    case 'ArrowRight': e.preventDefault(); audio.currentTime = Math.min(audio.duration||0, audio.currentTime+5); break;
+                    case 'ArrowLeft': e.preventDefault(); audio.currentTime = Math.max(0, audio.currentTime-5); break;
+                    case 'ArrowUp': e.preventDefault(); audio.volume = Math.min(1, audio.volume+0.05); break;
+                    case 'ArrowDown': e.preventDefault(); audio.volume = Math.max(0, audio.volume-0.05); break;
+                    case 'KeyN': e.preventDefault(); playNext(); break;
+                    case 'KeyP': e.preventDefault(); playPrev(); break;
+                }
+            });
+
+            function resizeVisualizer() {
+                const rect = visualizerCanvas.parentElement.getBoundingClientRect();
+                const dpr = window.devicePixelRatio || 1;
+                visualizerCanvas.width = rect.width * dpr;
+                visualizerCanvas.height = rect.height * dpr;
+                vizCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+                visualizerCanvas.style.width = rect.width + 'px';
+                visualizerCanvas.style.height = rect.height + 'px';
+            }
+            resizeVisualizer();
+            window.addEventListener('resize', resizeVisualizer);
+
+            function createParticles() {
+                const container = document.getElementById('particlesContainer');
+                container.innerHTML = '';
+                for (let i = 0; i < 45; i++) {
+                    const p = document.createElement('div');
+                    p.className = 'particle';
+                    p.style.left = Math.random() * 100 + '%';
+                    p.style.width = p.style.height = (3 + Math.random() * 7) + 'px';
+                    p.style.animationDuration = (13 + Math.random() * 18) + 's';
+                    p.style.animationDelay = Math.random() * 12 + 's';
+                    container.appendChild(p);
+                }
+            }
+            createParticles();
+
+            updatePlayerUIForNoTrack();
+            renderPlaylist();
+            document.addEventListener('click', () => { if (audioContext?.state === 'suspended') audioContext.resume(); }, {once: false});
+        })();
+    </script>
+</body>
+</html>
